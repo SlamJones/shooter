@@ -11,23 +11,24 @@ It is highly recommended to lauch the game using shooter.sh, not shooter.py.
 Shooter is a top-down arcade shooter game.  The player, enemies, pickups,
 and projectiles are represented by colored circles of various sizes.
 
-Pickups grant new weapons or increase ammo of existing weapons, or restore
+Pickups grant new weapons, increase ammo of existing weapons, or restore
 some health.  Pickup spawns are controlled by a central function, which waits
 to spawn if a pickup is already present.  The spawn controller determines
-if a pickup is to be spawned, where to spawn it, and what values it has.
+if a pickup is to be spawned, where to spawn it, what values it has, and how
+long it will exist before deacying and disappearing from screen.
 Spawns can be affected by player score or other variables.
 
 Weapons come in many forms.  The 'Basic' weapon fires one projectile at a
 time at a moderate rate, with Damage of 1.  Other weapons include 'Shotgun',
 which spawns 7 pellets in a fan pattern (angle of spread and number of pellets
 can be modified at run-time or in the script), 'Shatter', which causes a pellet,
-after hitting an object, to become 3 porjectiles, in a fan pattern, spreading
-out from the center of the hit object.  'Wide' fires several parallel projectiles
+after hitting an object, to become 3 projectiles, spreading out in a fan pattern
+from the center of the hit object.  'Wide' fires several parallel projectiles
 in the direction the player is facing.  'Split' causes a projectile, upon hitting
 an object, to turn into 4 projectiles, radiating outward from hit object.  
 'Passthru' determines how many objects it can hit before being destroyed.  Other
 weapon types can be created, and weapon types can be combined.  For example,
-'Split > Shatter' first screate a 'Split' when hitting an object.  Each of the
+'Split > Shatter' first creates a 'Split' when hitting an object.  Each of the
 created projectiles from the 'Split' will 'Shatter' when encountering an object,
 potentially leading to a cascade of projectiles being created.
 
