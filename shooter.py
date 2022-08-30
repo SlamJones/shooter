@@ -989,20 +989,41 @@ def pickup_spawn_controller(win,hero,pickups,score):
 def spawn_pickup(origin_x,origin_y):
     roll = random.randrange(0,100)
     max_dist = settings["projectile_max_distance"]["value"]
-    if roll <= 100 and roll >= 50:
+    if roll >= 75:
         pickup = {"p_type":"Health","name":"HP+1","use":"immediate","value":1,
                   "decay_time":300,"decay":0,"hit_box":10}
         fill,outline = "red","cyan"
-    elif roll < 50 and roll >= 20:
-        pickup = {"p_type":"Gun","name":"Shotgun","type":"Spread","use":"immediate","value":50,
-                  "decay_time":300,"decay":0,"hit_box":10,
-                  "damage":1,"fire_rate":4,"angle":45,"n":7,"range":max_dist/2,"passthru":1}
+    else:
         fill,outline = "orange3","cyan"
-    elif roll < 20 and roll >= 0:
-        pickup = {"p_type":"Gun","name":"Shatter","type":"Shatter","use":"immediate","value":50,
-                  "decay_time":300,"decay":0,"hit_box":10,
-                  "damage":1,"fire_rate":4,"angle":30,"n":3,"range":max_dist,"passthru":0}
-        fill,outline = "orange3","cyan"
+        max_roll = 100
+        gun_roll = random.randrange(0,max_roll)
+        roll_list = []
+        len_guns = 5
+        for i in range(len_guns):
+            roll_list.append(((i+1)/len_guns)*max_roll)
+        if gun_roll <= roll_list[0]:
+            pickup = {"p_type":"Gun","name":"Shotgun","type":"Spread","use":"immediate","value":50,
+                      "decay_time":300,"decay":0,"hit_box":10,
+                      "damage":1,"fire_rate":4,"angle":45,"n":7,"range":max_dist/2,"passthru":1}
+        elif gun_roll <= roll_list[1]:
+            pickup = {"p_type":"Gun","name":"Shatter","type":"Shatter","use":"immediate","value":50,
+                      "decay_time":300,"decay":0,"hit_box":10,
+                      "damage":1,"fire_rate":4,"angle":30,"n":3,"range":max_dist,"passthru":0}
+        elif gun_roll <= roll_list[2]:
+            pickup = {"p_type":"Gun","name":"Wide","type":"Wide","use":"immediate","value":50,
+                      "decay_time":300,"decay":0,"hit_box":10,
+                      "damage":1,"fire_rate":6,"angle":10,"n":4,"range":max_dist,"passthru":0}
+        elif gun_roll <= roll_list[3]:
+            pickup = {"p_type":"Gun","name":"Split","type":"Split","use":"immediate","value":50,
+                      "decay_time":300,"decay":0,"hit_box":10,
+                      "damage":1,"fire_rate":6,"angle":30,"n":3,"range":max_dist,"passthru":0}
+        else:
+            pickup = {"p_type":"Gun","name":"Split > Shatter","type":"Split > Shatter","use":"immediate",
+                      "value":50,"decay_time":300,"decay":0,"hit_box":10,
+                      "damage":1,"fire_rate":6,"angle":30,"n":3,"range":max_dist,"passthru":0}
+        
+        
+        
     pickup["graphics"] = Circle(Point(origin_x,origin_y),pickup["hit_box"])
     pickup["graphics"].setFill(fill)
     pickup["graphics"].setOutline(outline)
