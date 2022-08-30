@@ -41,6 +41,34 @@ settings = {
 }
 
 
+all_guns = [
+    {"p_type":"Gun","name":"Shotgun","type":"Spread","use":"immediate","value":50,"tier":1,
+     "decay_time":300,"decay":0,"passthru":0,
+     "damage":0.5,"fire_rate":8,"angle":45,"n":7,"range":settings["projectile_max_distance"]["value"]/2},
+    {"p_type":"Gun","name":"Shatter","type":"Shatter","use":"immediate","value":50,"tier":1,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,
+     "damage":1,"fire_rate":6,"angle":30,"n":3,"range":settings["projectile_max_distance"]["value"]},
+    {"p_type":"Gun","name":"Split","type":"Split","use":"immediate","value":50,"tier":1,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,
+     "damage":1,"fire_rate":6,"angle":30,"n":3,"range":settings["projectile_max_distance"]["value"]},
+    {"p_type":"Gun","name":"Wide","type":"Wide","use":"immediate","value":50,"tier":2,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":1,
+     "damage":1,"fire_rate":6,"angle":10,"n":4,"range":settings["projectile_max_distance"]["value"]},
+    {"p_type":"Gun","name":"Heavy Pistol","type":"Basic","use":"immediate","value":50,"tier":2,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":1,
+     "damage":2,"fire_rate":9,"angle":30,"n":1,"range":settings["projectile_max_distance"]["value"]},
+    {"p_type":"Gun","name":"Rifle","type":"Basic","use":"immediate","value":50,"tier":2,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":2,
+     "damage":1,"fire_rate":9,"angle":30,"n":1,"range":settings["projectile_max_distance"]["value"]*2},
+    {"p_type":"Gun","name":"Heavy Shotgun","type":"Spread","use":"immediate","value":50,"tier":2,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":1,
+     "damage":1,"fire_rate":8,"angle":45,"n":7,"range":settings["projectile_max_distance"]["value"]/2},
+    {"p_type":"Gun","name":"Split > Shatter","type":"Split > Shatter","use":"immediate","tier":2,
+     "value":50,"decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,
+     "damage":1,"fire_rate":6,"angle":30,"n":3,"range":settings["projectile_max_distance"]["value"]}
+]
+
+
 def clear():
     _ = os.system('clear')
     
@@ -115,7 +143,7 @@ def build_hero(win):
     hero["fire_rate"] = 2
     max_dist = settings["projectile_max_distance"]["value"]
     #hero["gun"] = {"name":"Basic","type":"Basic","damage":1,"ammo":10000,"fire_rate":4}
-    hero["guns"] = [{"name":"Basic","type":"Basic","damage": 1,"ammo":10000,
+    hero["guns"] = [{"name":"Basic Pistol","type":"Basic","damage": 1,"ammo":10000,
                      "fire_rate":4,"range":max_dist,"n":1,"passthru":0},
                     #{"name":"Spread","type":"Spread","damage":1,"ammo":10,
                     # "fire_rate":6,"angle":30,"n":3,"range":max_dist,"passthru":0},
@@ -132,6 +160,7 @@ def build_hero(win):
     hero["color"] = settings["hero_color"]["value"]
     hero["animation"] = []
     hero["tangible"] = True
+    hero["boosts"] = []
     hero = draw_hero(win,hero)
     return(hero)
 
@@ -154,6 +183,7 @@ def spawn_mob(win,score):
     to_draw = []
     mob = {}
     move_factor = 0
+    border_width = 5
     if score >= 0:
         move_factor = score / 100
     
@@ -173,7 +203,7 @@ def spawn_mob(win,score):
         mob["index"] = 6
         mob["color"] = settings["mob_color"]["value"][6]
         mob["size"] = round(settings["mob_size"]["value"]*1.6)
-        mob["speed"] = round(settings["mob_speed"]["value"]*2,1)
+        mob["speed"] = round(settings["mob_speed"]["value"]*1.5,1)
     elif big_roll >= 450:
         mob["health"] = 6
         mob["damage"] = 1
@@ -181,7 +211,7 @@ def spawn_mob(win,score):
         mob["index"] = 5
         mob["color"] = settings["mob_color"]["value"][5]
         mob["size"] = round(settings["mob_size"]["value"]*3.6)
-        mob["speed"] = round(settings["mob_speed"]["value"]*1.2,1)
+        mob["speed"] = round(settings["mob_speed"]["value"]*1.1,1)
     elif big_roll >= 300:
         mob["health"] = 3
         mob["damage"] = 1
@@ -189,7 +219,7 @@ def spawn_mob(win,score):
         mob["index"] = 4
         mob["color"] = settings["mob_color"]["value"][4]
         mob["size"] = round(settings["mob_size"]["value"]*1.8)
-        mob["speed"] = round(settings["mob_speed"]["value"]*1.6,1)
+        mob["speed"] = round(settings["mob_speed"]["value"]*1.25,1)
     elif big_roll >= 200:
         mob["health"] = 4
         mob["damage"] = 1
@@ -239,24 +269,27 @@ def spawn_mob(win,score):
     mob["move_type"] = "approach_hero"
     mob["delete"] = False
     mob["tangible"] = True
+    mob["radius"] = mob["size"] + border_width
     
     spawn_side = random.choice(["top","bottom","left","right"])
     if spawn_side == "top":
-        centerX = random.randrange(mob["size"]+settings["top_boundary"]["value"],settings["window_x"]["value"]-mob["size"])
-        centerY = mob["size"]+settings["top_boundary"]["value"]
+        centerX = random.randrange(
+            mob["radius"]+settings["top_boundary"]["value"],settings["window_x"]["value"]-mob["radius"])
+        centerY = mob["radius"]+settings["top_boundary"]["value"]
     elif spawn_side == "bottom":
-        centerX = random.randrange(mob["size"],settings["window_x"]["value"]-mob["size"])
-        centerY = settings["window_y"]["value"]-mob["size"]
+        centerX = random.randrange(mob["radius"],settings["window_x"]["value"]-mob["radius"])
+        centerY = settings["window_y"]["value"]-mob["radius"]
     elif spawn_side == "left":
-        centerX = mob["size"]
-        centerY = random.randrange(mob["size"],settings["window_y"]["value"]-mob["size"])
+        centerX = mob["radius"]
+        centerY = random.randrange(mob["radius"],settings["window_y"]["value"]-mob["radius"])
     elif spawn_side == "right":
-        centerX = settings["window_x"]["value"]-mob["size"]
-        centerY = random.randrange(mob["size"],settings["window_y"]["value"]-mob["size"])
+        centerX = settings["window_x"]["value"]-mob["radius"]
+        centerY = random.randrange(mob["radius"],settings["window_y"]["value"]-mob["radius"])
     
     mob["graphics"] = Circle(Point(centerX,centerY), mob["size"])
     mob["graphics"].setFill(mob["color"])
-    mob["graphics"].setOutline(mob["color"])
+    mob["graphics"].setOutline("red")
+    mob["graphics"].setWidth(border_width)
     to_draw.append(mob["graphics"])
     draw_to_draw(win,to_draw)
     return(mob)
@@ -444,7 +477,7 @@ def check_projectile_hit(projectile,mobs):
     for mob in mobs:
         if mob["tangible"]:
             mob_x,mob_y = mob["graphics"].getCenter().getX(),mob["graphics"].getCenter().getY()
-            mob_r = mob["graphics"].getRadius()
+            mob_r = mob["radius"]
             dx = math.pow((proj_x - mob_x),2)
             dy = math.pow((proj_y - mob_y),2)
             distance = (math.sqrt(dx + dy))
@@ -497,7 +530,8 @@ def check_for_projectile_hits(win,projectiles,mobs):
                                         o.append(i)
                             o.append(instruction)
                             radius = hit[1]["graphics"].getRadius()
-                            offset = hit[0]["graphics"].getRadius() + radius + 5
+                            #offset = hit[0]["graphics"].getRadius() + radius + 5
+                            offset = hit[0]["radius"] + 5
                             passthru = hit[1]["passthru"]
                             max_dist = round(hit[1]["max_distance"]*0.75)
                             if settings["debug_mode"]["value"]:
@@ -532,7 +566,8 @@ def check_for_projectile_hits(win,projectiles,mobs):
                                         o.append(i)
                             o.append(instruction)
                             radius = hit[1]["graphics"].getRadius()
-                            offset = hit[0]["graphics"].getRadius() + radius + 5
+                            #offset = hit[0]["graphics"].getRadius() + radius + 5
+                            offset=hit[0]["radius"] + 5
                             passthru = hit[1]["passthru"]
                             max_dist = round(hit[1]["max_distance"]*0.75)
                             if settings["debug_mode"]["value"]:
@@ -598,7 +633,8 @@ def flash_mob(mob):
     
 def i_flash_mob(mob):
     mob["animation"] = (
-        {"instruction": "flash","tick":0,"flash_ticks":15,"flash_color":"white","start_color":mob["color"]})
+        {"instruction": "flash","tick":0,"flash_ticks":20,"flash_on":True,
+         "flash_color":"white","start_color":mob["color"]})
     if settings["debug_mode"]["value"]:
         print(mob)
     return(mob)
@@ -676,18 +712,22 @@ def animation_queue(win,items):
                     item["animation"]["tick"] += 1
                     
             elif instruction == "i_flash":
+                #flash_on = True
                 if item["animation"]["tick"] >= item["animation"]["flash_ticks"]:
                     item["graphics"].setFill(item["animation"]["start_color"])
                     item["animation"] = {}
                     item["tangible"] = True
                 else:
-                    if(item["animation"]["tick"] % 2) == 0:
-                        item["graphics"].setFill(item["animation"]["flash_color"])
-                    else:
-                        item["graphics"].setFill(item["animation"]["start_color"])
-                    item["tangible"] = False
-                    item["animation"]["tick"] += 1
-                
+                    if(item["animation"]["tick"] % 5) == 0:
+                        item["animation"]["flash_on"] = switch_bool(item["animation"]["flash_on"])
+                if item["animation"]["flash_on"]:
+                    item["graphics"].setFill("white")
+                else:
+                    item["graphics"].setFill(item["color"])
+                item["animation"]["tick"] += 1
+                item["tangible"] = False
+            elif instruction == "speed_flash":
+                pass
     ## Return the updated queue to be called next frame ##
     return(items)
 
@@ -744,7 +784,7 @@ def check_hero_mob_collisions(win,hero,mobs):
         for mob in mobs:
             if mob["tangible"]:
                 mob_x,mob_y = get_object_xy(mob)
-                touch_distance = mob["graphics"].getRadius() + hero["graphics"].getRadius()
+                touch_distance = mob["radius"] + hero["graphics"].getRadius()
                 distance = distance_between_objects(hero,mob)
                 if distance <= touch_distance:
                     hero = i_flash_mob(hero)
@@ -975,59 +1015,66 @@ def return_higher(a,b):
 
 
 def pickup_spawn_controller(win,hero,pickups,score):
+    ## If there are no pickups active ##
     if len(pickups) == 0:
+        ## Make a roll that is increased by score ##
         roll = random.randrange(0,200) - score/200
+        ## Score determines maximum weapon tier ##
+        if score >= 200:
+            tier = 2
+        else:
+            tier = 1
+        ## If roll is successful ##
         if roll <= 0:
+            ## Set a random location in the playfield to spawn the pickup ##
             origin_x = random.randrange(0,settings["window_x"]["value"])
-            origin_y = random.randrange(settings["top_boundary"]["value"],settings["window_y"]["value"])
-            pickup = spawn_pickup(origin_x,origin_y)
+            origin_y = random.randrange(
+                settings["top_boundary"]["value"],
+                settings["window_y"]["value"])
+            pickup = spawn_pickup(origin_x,origin_y,tier)
             pickups.append(pickup)
             pickup["graphics"].draw(win)
     return(pickups)
 
 
-def spawn_pickup(origin_x,origin_y):
+def spawn_pickup(origin_x,origin_y,tier):
     roll = random.randrange(0,100)
     max_dist = settings["projectile_max_distance"]["value"]
     if roll >= 75:
         pickup = {"p_type":"Health","name":"HP+1","use":"immediate","value":1,
-                  "decay_time":300,"decay":0,"hit_box":10}
+                  "decay_time":300,"decay":0,"hit_box":20,"border":5}
         fill,outline = "red","cyan"
     else:
-        fill,outline = "orange3","cyan"
+        gun_choices = []
+        fill,outline = "green3","cyan"
         max_roll = 100
         gun_roll = random.randrange(0,max_roll)
-        roll_list = []
-        len_guns = 5
-        for i in range(len_guns):
-            roll_list.append(((i+1)/len_guns)*max_roll)
-        if gun_roll <= roll_list[0]:
-            pickup = {"p_type":"Gun","name":"Shotgun","type":"Spread","use":"immediate","value":50,
-                      "decay_time":300,"decay":0,"hit_box":10,
-                      "damage":1,"fire_rate":8,"angle":45,"n":7,"range":max_dist/2,"passthru":1}
-        elif gun_roll <= roll_list[1]:
-            pickup = {"p_type":"Gun","name":"Shatter","type":"Shatter","use":"immediate","value":50,
-                      "decay_time":300,"decay":0,"hit_box":10,
-                      "damage":1,"fire_rate":4,"angle":30,"n":3,"range":max_dist,"passthru":0}
-        elif gun_roll <= roll_list[2]:
-            pickup = {"p_type":"Gun","name":"Wide","type":"Wide","use":"immediate","value":50,
-                      "decay_time":300,"decay":0,"hit_box":10,
-                      "damage":1,"fire_rate":6,"angle":10,"n":4,"range":max_dist,"passthru":0}
-        elif gun_roll <= roll_list[3]:
-            pickup = {"p_type":"Gun","name":"Split","type":"Split","use":"immediate","value":50,
-                      "decay_time":300,"decay":0,"hit_box":10,
-                      "damage":1,"fire_rate":6,"angle":30,"n":3,"range":max_dist,"passthru":0}
-        else:
-            pickup = {"p_type":"Gun","name":"Split > Shatter","type":"Split > Shatter","use":"immediate",
-                      "value":50,"decay_time":300,"decay":0,"hit_box":10,
-                      "damage":1,"fire_rate":6,"angle":30,"n":3,"range":max_dist,"passthru":0}
         
+        for gun in all_guns:
+            if gun["tier"] <= tier:
+                gun_choices.append(gun)
         
+        pickup = random.choice(gun_choices)
+        pickup["hit_box"] = 15
+        pickup["border"] = 5
         
+    if origin_x <= 0:
+        origin_x = pickup["radius"]+1
+    elif origin_x >= settings["window_x"]["value"]:
+        origin_x = settings["window_x"]["value"]-pickup["radius"]-1
+        
+    if origin_y <= 0:
+        origin_y = pickup["radius"]+1
+    elif origin_y >= settings["window_y"]["value"]:
+        origin_y = settings["window_y"]["value"]-pickup["radius"]-1
+            
     pickup["graphics"] = Circle(Point(origin_x,origin_y),pickup["hit_box"])
     pickup["graphics"].setFill(fill)
     pickup["graphics"].setOutline(outline)
-    pickup["graphics"].setWidth(5)
+    pickup["graphics"].setWidth(pickup["border"])
+    pickup["radius"] = pickup["hit_box"]+pickup["border"]
+    pickup["decay"] = 0
+    print("New pickup: {}".format(pickup))
     return(pickup)
 
 
@@ -1035,7 +1082,7 @@ def check_pickup_collision(win,hero,pickups):
     info_string = ""
     pickup_list = pickups.copy()
     for pickup in pickups:
-        pickup_range = hero["graphics"].getRadius() + pickup["graphics"].getRadius()
+        pickup_range = hero["graphics"].getRadius() + pickup["radius"]
         distance = distance_between_objects(hero,pickup)
         if distance <= pickup_range:
             hero,info_string = hero_pickup(hero,pickup)
@@ -1052,6 +1099,8 @@ def hero_pickup(hero,pickup):
         for gun in hero["guns"]:
             if gun["name"] == pickup["name"]:
                 gun["ammo"] += pickup["value"]
+                print("Picked Up: {}".format(pickup))
+                print("Gave ammo to {}".format(gun))
                 gun_present=True
         if not gun_present:
             gun = {
@@ -1060,7 +1109,7 @@ def hero_pickup(hero,pickup):
                 "passthru": pickup["passthru"],"n":pickup["n"]}
             hero["guns"].append(gun)
             hero["gun"] = gun
-        info_string="Picked up {}! +{} ammo".format(gun["name"],pickup["value"])
+        info_string="Picked up {}! +{} ammo".format(pickup["name"],pickup["value"])
     elif pickup["p_type"] == "Health":
         hero["health"] += pickup["value"]
         info_string="Health increased! (+{})".format(pickup["value"])
@@ -1075,6 +1124,7 @@ def calc_pickups_decay(pickups):
             pickups_list.remove(pickup)
         else:
             pickup["decay"] += 1
+            #print(pickup["decay"])
     pickups = pickups_list
     return(pickups)
 
