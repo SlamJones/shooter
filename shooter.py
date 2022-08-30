@@ -1004,7 +1004,7 @@ def spawn_pickup(origin_x,origin_y):
         if gun_roll <= roll_list[0]:
             pickup = {"p_type":"Gun","name":"Shotgun","type":"Spread","use":"immediate","value":50,
                       "decay_time":300,"decay":0,"hit_box":10,
-                      "damage":1,"fire_rate":4,"angle":45,"n":7,"range":max_dist/2,"passthru":1}
+                      "damage":1,"fire_rate":8,"angle":45,"n":7,"range":max_dist/2,"passthru":1}
         elif gun_roll <= roll_list[1]:
             pickup = {"p_type":"Gun","name":"Shatter","type":"Shatter","use":"immediate","value":50,
                       "decay_time":300,"decay":0,"hit_box":10,
