@@ -44,7 +44,7 @@ settings = {
 all_guns = [
     {"p_type":"Gun","name":"Shotgun","type":"Spread","use":"immediate","value":50,"tier":1,
      "decay_time":300,"decay":0,"passthru":0,
-     "damage":0.5,"fire_rate":8,"angle":45,"n":7,"range":settings["projectile_max_distance"]["value"]/2},
+     "damage":0.5,"fire_rate":12,"angle":45,"n":7,"range":settings["projectile_max_distance"]["value"]/2},
     {"p_type":"Gun","name":"Shatter","type":"Shatter","use":"immediate","value":50,"tier":1,
      "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,
      "damage":1,"fire_rate":6,"angle":30,"n":3,"range":settings["projectile_max_distance"]["value"]},
@@ -140,7 +140,7 @@ def build_hero(win):
     hero["direction"] = 0
     hero["health"] = 3
     hero["damage"] = 1
-    hero["fire_rate"] = 2
+    hero["fire_rate"] = 4
     max_dist = settings["projectile_max_distance"]["value"]
     #hero["gun"] = {"name":"Basic","type":"Basic","damage":1,"ammo":10000,"fire_rate":4}
     hero["guns"] = [{"name":"Basic Pistol","type":"Basic","damage": 1,"ammo":10000,
@@ -312,8 +312,9 @@ def switch_weapons(char):
                 else:
                     next_index = i + 1
         char["gun"] = char["guns"][next_index]
-        char["damage"] = set_damage(char)
-        char["fire_rate"] = char["gun"]["fire_rate"]
+        #char["damage"] = set_damage(char)
+        #char["fire_rate"] = char["gun"]["fire_rate"]
+        char = set_hero_gun_settings(char,char["gun"])
     return(char)
 
 
@@ -325,6 +326,7 @@ def check_hero_ammo(hero):
                 guns_copy.remove(gun)
                 hero["guns"] = guns_copy
                 hero = switch_weapons(hero)
+                
             else:
                 gun["ammo"] = 10000
     return(hero)
@@ -1043,6 +1045,7 @@ def spawn_pickup(origin_x,origin_y,tier):
     if roll >= 75:
         pickup = {"p_type":"Health","name":"HP+1","use":"immediate","value":1,
                   "decay_time":300,"decay":0,"hit_box":20,"border":5}
+        pickup["radius"] = pickup["hit_box"]+pickup["border"]
         fill,outline = "red","cyan"
     else:
         gun_choices = []
@@ -1057,22 +1060,22 @@ def spawn_pickup(origin_x,origin_y,tier):
         pickup = random.choice(gun_choices)
         pickup["hit_box"] = 15
         pickup["border"] = 5
+        pickup["radius"] = pickup["hit_box"]+pickup["border"]
         
-    if origin_x <= 0:
-        origin_x = pickup["radius"]+1
-    elif origin_x >= settings["window_x"]["value"]:
-        origin_x = settings["window_x"]["value"]-pickup["radius"]-1
+    if origin_x <= pickup["radius"]:
+        origin_x = pickup["radius"]+5
+    elif origin_x >= settings["window_x"]["value"]-pickup["radius"]:
+        origin_x = settings["window_x"]["value"]-pickup["radius"]-5
         
-    if origin_y <= 0:
-        origin_y = pickup["radius"]+1
-    elif origin_y >= settings["window_y"]["value"]:
-        origin_y = settings["window_y"]["value"]-pickup["radius"]-1
+    if origin_y <= pickup["radius"]:
+        origin_y = pickup["radius"]+5
+    elif origin_y >= settings["window_y"]["value"]-pickup["radius"]:
+        origin_y = settings["window_y"]["value"]-pickup["radius"]-5
             
     pickup["graphics"] = Circle(Point(origin_x,origin_y),pickup["hit_box"])
     pickup["graphics"].setFill(fill)
     pickup["graphics"].setOutline(outline)
     pickup["graphics"].setWidth(pickup["border"])
-    pickup["radius"] = pickup["hit_box"]+pickup["border"]
     pickup["decay"] = 0
     print("New pickup: {}".format(pickup))
     return(pickup)
@@ -1109,11 +1112,18 @@ def hero_pickup(hero,pickup):
                 "passthru": pickup["passthru"],"n":pickup["n"]}
             hero["guns"].append(gun)
             hero["gun"] = gun
+            hero = set_hero_gun_settings(hero,gun)
         info_string="Picked up {}! +{} ammo".format(pickup["name"],pickup["value"])
     elif pickup["p_type"] == "Health":
         hero["health"] += pickup["value"]
         info_string="Health increased! (+{})".format(pickup["value"])
     return(hero,info_string)
+
+
+def set_hero_gun_settings(hero,gun):
+    hero["fire_rate"] = gun["fire_rate"]
+    hero["damage"] = gun["damage"]
+    return(hero)
 
 
 def calc_pickups_decay(pickups):
