@@ -29,6 +29,7 @@ settings = {
     "projectile_size": {"value": 3,"modifiable": True},
     "projectile_speed": {"value": 16,"modifiable": True},
     "projectile_max_distance": {"value": 400,"modifiable":True},
+    "extra_radius": {"value": 5,"modifiable":True},
     "keys": {"modifiable":True,    
         "move_up": {"value": "Up","modifiable": True},
         "move_down": {"value": "Down","modifiable": True},
@@ -117,8 +118,6 @@ def draw_reticule(win,hero,centerX,centerY):
     draw_to_draw(win,to_draw)
     return(hero)
         
-##def calculate_end_point(direction,speed,origin_x,origin_y):
-        
 
 def move_hero(win,hero):
     if check_hero_border(win,hero):
@@ -144,18 +143,7 @@ def build_hero(win):
     max_dist = settings["projectile_max_distance"]["value"]
     #hero["gun"] = {"name":"Basic","type":"Basic","damage":1,"ammo":10000,"fire_rate":4}
     hero["guns"] = [{"name":"Basic Pistol","type":"Basic","damage": 1,"ammo":10000,
-                     "fire_rate":4,"range":max_dist,"n":1,"passthru":0},
-                    #{"name":"Spread","type":"Spread","damage":1,"ammo":10,
-                    # "fire_rate":6,"angle":30,"n":3,"range":max_dist,"passthru":0},
-                    #{"name":"Shotgun","type":"Spread","damage":0.5,"ammo":10000,
-                    # "fire_rate":8,"angle":45,"n":7,"range":int(max_dist/2),"passthru":1},
-                    #{"name": "Wide","type":"Wide","damage": 1, "ammo": 10000,
-                    # "fire_rate": 6,"width":10,"n":3,"range":max_dist,"passthru":0},
-                    #{"name": "Shatter","type":"Shatter","damage": 1, "ammo": 10000,
-                    # "fire_rate": 6,"angle":30,"n":3,"range":max_dist,"passthru":0},
-                    #{"name": "Split > Shatter","type":"Split > Shatter","damage": 1, "ammo": 10000,
-                    # "fire_rate": 8,"range":max_dist,"passthru":0},
-                   ]
+                     "fire_rate":4,"range":max_dist,"n":1,"passthru":0}]
     hero["gun"] = hero["guns"][0]
     hero["color"] = settings["hero_color"]["value"]
     hero["animation"] = []
@@ -322,7 +310,7 @@ def check_hero_ammo(hero):
     guns_copy = hero["guns"].copy()
     for gun in hero["guns"]:
         if gun["ammo"] <= 0:
-            if gun["name"] != "Basic":
+            if gun["name"] != "Basic Pistol":
                 guns_copy.remove(gun)
                 hero["guns"] = guns_copy
                 hero = switch_weapons(hero)
@@ -500,6 +488,8 @@ def check_for_projectile_hits(win,projectiles,mobs):
                 mob_copy = hit[0].copy()
                 hit[0]["health"] -= hit[1]["damage"]
                 flash_mob(hit[0])
+                ## Slow down mob slightly ##
+                hit[0]["speed"] = hit[0]["speed"] * 0.9
                 
                 ## Undraw and cull projectile ##
                 if projectile["passthru"] <= 0:
@@ -532,8 +522,7 @@ def check_for_projectile_hits(win,projectiles,mobs):
                                         o.append(i)
                             o.append(instruction)
                             radius = hit[1]["graphics"].getRadius()
-                            #offset = hit[0]["graphics"].getRadius() + radius + 5
-                            offset = hit[0]["radius"] + 5
+                            offset = hit[0]["radius"] + settings["extra_radius"]["value"]
                             passthru = hit[1]["passthru"]
                             max_dist = round(hit[1]["max_distance"]*0.75)
                             if settings["debug_mode"]["value"]:
@@ -568,8 +557,7 @@ def check_for_projectile_hits(win,projectiles,mobs):
                                         o.append(i)
                             o.append(instruction)
                             radius = hit[1]["graphics"].getRadius()
-                            #offset = hit[0]["graphics"].getRadius() + radius + 5
-                            offset=hit[0]["radius"] + 5
+                            offset=hit[0]["radius"] + settings["extra_radius"]["value"]
                             passthru = hit[1]["passthru"]
                             max_dist = round(hit[1]["max_distance"]*0.75)
                             if settings["debug_mode"]["value"]:
@@ -880,13 +868,8 @@ def build_ui(win):
     fps_box_x,fps_box_y = settings["window_x"]["value"]/10,settings["window_y"]["value"]/10
     fps_box_P1 = [0,0]
     fps_box_P2 = [fps_box_x,fps_box_y]
-    fps_box_center = [fps_box_x/2,fps_box_y/2]
-    fps_box["box"] = Rectangle(Point(0,0),Point(fps_box_P2[0],fps_box_P2[1]))
-    fps_box["box"].setFill(settings["bg_color"]["value"])
-    fps_box["box"].setOutline(settings["fg_color"]["value"])
+    fps_box = build_ui_box(fps_box,fps_box_P1,fps_box_P2)
     to_draw.append(fps_box["box"])
-    fps_box["text"] = Text(Point(fps_box_center[0],fps_box_center[1]),"")
-    fps_box["text"].setTextColor(settings["fg_color"]["value"])
     to_draw.append(fps_box["text"])
     ui["fps_box"] = fps_box
     
@@ -894,15 +877,9 @@ def build_ui(win):
     score_box_x,score_box_y = settings["window_x"]["value"]/10,settings["window_y"]["value"]/10
     score_box_P1 = [settings["window_x"]["value"],0]
     score_box_P2 = [settings["window_x"]["value"]*0.9,settings["window_y"]["value"]/10]
-    score_box_center = [(score_box_P1[0] + score_box_P2[0]) / 2,(score_box_P1[1] + score_box_P2[1]) / 2]
-    score_box["box"] = Rectangle(
-        Point(score_box_P1[0],score_box_P1[1]),Point(score_box_P2[0],score_box_P2[1]))
-    score_box["box"].setFill(settings["bg_color"]["value"])
-    score_box["box"].setOutline(settings["fg_color"]["value"])
-    to_draw.append(score_box["box"])
-    score_box["text"] = Text(Point(score_box_center[0],score_box_center[1]),"")
-    score_box["text"].setTextColor(settings["fg_color"]["value"])
+    score_box = build_ui_box(score_box,score_box_P1,score_box_P2)
     score_box["text"].setSize(20)
+    to_draw.append(score_box["box"])
     to_draw.append(score_box["text"])
     ui["score_box"] = score_box
     
@@ -910,16 +887,9 @@ def build_ui(win):
     weapon_box_x,weapon_box_y = settings["window_x"]["value"]*0.15,settings["window_y"]["value"]/10
     weapon_box_P1 = [score_box_P2[0],0]
     weapon_box_P2 = [score_box_P2[0]-weapon_box_x,settings["window_y"]["value"]/10]
-    weapon_box_center = [
-        (weapon_box_P1[0] + weapon_box_P2[0]) / 2,(weapon_box_P1[1] + weapon_box_P2[1]) / 2]
-    weapon_box["box"] = Rectangle(
-        Point(weapon_box_P1[0],weapon_box_P1[1]),Point(weapon_box_P2[0],weapon_box_P2[1]))
-    weapon_box["box"].setFill(settings["bg_color"]["value"])
-    weapon_box["box"].setOutline(settings["fg_color"]["value"])
-    to_draw.append(weapon_box["box"])
-    weapon_box["text"] = Text(Point(weapon_box_center[0],weapon_box_center[1]),"")
-    weapon_box["text"].setTextColor(settings["fg_color"]["value"])
+    weapon_box = build_ui_box(weapon_box,weapon_box_P1,weapon_box_P2)
     weapon_box["text"].setSize(18)
+    to_draw.append(weapon_box["box"])
     to_draw.append(weapon_box["text"])
     ui["weapon_box"] = weapon_box
     
@@ -927,16 +897,9 @@ def build_ui(win):
     hp_box_x,hp_box_y = settings["window_x"]["value"]*0.1,settings["window_y"]["value"]/10
     hp_box_P1 = [weapon_box_P2[0],0]
     hp_box_P2 = [weapon_box_P2[0]-hp_box_x,settings["window_y"]["value"]/10]
-    hp_box_center = [
-        (hp_box_P1[0] + hp_box_P2[0]) / 2,(hp_box_P1[1] + hp_box_P2[1]) / 2]
-    hp_box["box"] = Rectangle(
-        Point(hp_box_P1[0],hp_box_P1[1]),Point(hp_box_P2[0],hp_box_P2[1]))
-    hp_box["box"].setFill(settings["bg_color"]["value"])
-    hp_box["box"].setOutline(settings["fg_color"]["value"])
-    to_draw.append(hp_box["box"])
-    hp_box["text"] = Text(Point(hp_box_center[0],hp_box_center[1]),"")
-    hp_box["text"].setTextColor(settings["fg_color"]["value"])
+    hp_box = build_ui_box(hp_box,hp_box_P1,hp_box_P2)
     hp_box["text"].setSize(18)
+    to_draw.append(hp_box["box"])
     to_draw.append(hp_box["text"])
     ui["hp_box"] = hp_box
     
@@ -944,16 +907,9 @@ def build_ui(win):
     count_box_x,count_box_y = settings["window_x"]["value"]*0.1,settings["window_y"]["value"]/10
     count_box_P1 = [fps_box_P2[0],0]
     count_box_P2 = [fps_box_P2[0]+count_box_x,settings["window_y"]["value"]/10]
-    count_box_center = [
-        (count_box_P1[0] + count_box_P2[0]) / 2,(count_box_P1[1] + count_box_P2[1]) / 2]
-    count_box["box"] = Rectangle(
-        Point(count_box_P1[0],count_box_P1[1]),Point(count_box_P2[0],count_box_P2[1]))
-    count_box["box"].setFill(settings["bg_color"]["value"])
-    count_box["box"].setOutline(settings["fg_color"]["value"])
-    to_draw.append(count_box["box"])
-    count_box["text"] = Text(Point(count_box_center[0],count_box_center[1]),"")
-    count_box["text"].setTextColor(settings["fg_color"]["value"])
+    count_box = build_ui_box(count_box,count_box_P1,count_box_P2)
     count_box["text"].setSize(14)
+    to_draw.append(count_box["box"])
     to_draw.append(count_box["text"])
     ui["count_box"] = count_box
     
@@ -961,21 +917,31 @@ def build_ui(win):
     info_box_x,score_box_y = settings["window_x"]["value"]*0.8,settings["window_y"]["value"]/10
     info_box_P1 = [hp_box_P2[0],0]
     info_box_P2 = [count_box_P2[0],settings["window_y"]["value"]/10]
-    #info_box_P2 = [weapon_box_P2[0]-info_box_x,settings["window_y"]["value"]/10]
-    info_box_center = [(info_box_P1[0] + info_box_P2[0]) / 2,(info_box_P1[1] + info_box_P2[1]) / 2]
-    info_box["box"] = Rectangle(
-        Point(info_box_P1[0],info_box_P1[1]),Point(info_box_P2[0],info_box_P2[1]))
-    info_box["box"].setFill(settings["bg_color"]["value"])
-    info_box["box"].setOutline(settings["fg_color"]["value"])
-    to_draw.append(info_box["box"])
-    info_box["text"] = Text(Point(info_box_center[0],info_box_center[1]),"")
-    info_box["text"].setTextColor(settings["fg_color"]["value"])
+    info_box = build_ui_box(info_box,info_box_P1,info_box_P2)
     info_box["text"].setSize(24)
+    to_draw.append(info_box["box"])
     to_draw.append(info_box["text"])
     ui["info_box"] = info_box
     
+    
     draw_to_draw(win,to_draw)
     return(ui)
+
+
+def build_ui_box(ui_box,ui_box_P1,ui_box_P2):
+    ui_box_center = [(ui_box_P1[0] + ui_box_P2[0]) / 2,(ui_box_P1[1] + ui_box_P2[1]) / 2]
+    ui_box["box"] = Rectangle(
+        Point(ui_box_P1[0],ui_box_P1[1]),Point(ui_box_P2[0],ui_box_P2[1]))
+    ui_box["box"].setFill(settings["bg_color"]["value"])
+    ui_box["box"].setOutline(settings["fg_color"]["value"])
+    ui_box["text"] = Text(Point(ui_box_center[0],ui_box_center[1]),"")
+    ui_box["text"].setTextColor(settings["fg_color"]["value"])
+    return(ui_box)
+    
+    
+def draw_main_menu(win):
+    win_ui = ""
+    return(win_ui)
 
 
 def set_weapon_text(win,ui,hero):
@@ -1045,7 +1011,6 @@ def spawn_pickup(origin_x,origin_y,tier):
     if roll >= 75:
         pickup = {"p_type":"Health","name":"HP+1","use":"immediate","value":1,
                   "decay_time":300,"decay":0,"hit_box":20,"border":5}
-        pickup["radius"] = pickup["hit_box"]+pickup["border"]
         fill,outline = "red","cyan"
     else:
         gun_choices = []
@@ -1060,17 +1025,18 @@ def spawn_pickup(origin_x,origin_y,tier):
         pickup = random.choice(gun_choices)
         pickup["hit_box"] = 15
         pickup["border"] = 5
-        pickup["radius"] = pickup["hit_box"]+pickup["border"]
+
+    pickup["radius"] = pickup["hit_box"]+pickup["border"]
         
-    if origin_x <= pickup["radius"]:
-        origin_x = pickup["radius"]+5
-    elif origin_x >= settings["window_x"]["value"]-pickup["radius"]:
-        origin_x = settings["window_x"]["value"]-pickup["radius"]-5
+    if origin_x <= pickup["radius"]+settings["extra_radius"]["value"]:
+        origin_x = pickup["radius"]+settings["extra_radius"]["value"]
+    elif origin_x >= settings["window_x"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"]):
+        origin_x = settings["window_x"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"])
         
-    if origin_y <= pickup["radius"]:
-        origin_y = pickup["radius"]+5
-    elif origin_y >= settings["window_y"]["value"]-pickup["radius"]:
-        origin_y = settings["window_y"]["value"]-pickup["radius"]-5
+    if origin_y <= pickup["radius"]+settings["extra_radius"]["value"]:
+        origin_y = pickup["radius"]+settings["extra_radius"]["value"]
+    elif origin_y >= settings["window_y"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"]):
+        origin_y = settings["window_y"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"])
             
     pickup["graphics"] = Circle(Point(origin_x,origin_y),pickup["hit_box"])
     pickup["graphics"].setFill(fill)
@@ -1147,7 +1113,17 @@ def init():
     
 def main():
     win = open_window()
+    main_menu(win)
+    
+    
+def main_menu(win):
+    menu_ui = draw_main_menu(win)
+    play(win)
+    
+    
+def play(win):
     hero = build_hero(win)
+    ui = build_ui(win)
     projectiles = []
     mobs = []
     play = True
@@ -1163,7 +1139,6 @@ def main():
     mob_speed = settings["mob_speed"]["value"]
     text_queue = []
     pickups = []
-    ui = build_ui(win)
     fps_factor = 1.0
     
     ## MAIN PLAY LOOP ##
@@ -1291,6 +1266,17 @@ def main():
         elif inp == settings["keys"]["move_left"]["value"]:
             hero["direction"] = 270
             hero = move_hero(win,hero)
+            
+            
+        ## ## OTHER CONTROLS ## ##
+        elif inp == "e":
+            x = Rectangle(Point(0,settings["window_y"]["value"]/10),
+                          Point(settings["window_x"]["value"],settings["window_y"]["value"]))
+            x.setFill("black")
+            to_draw = [x]
+            draw_to_draw(win,to_draw)
+            redraw_item_group(win,mobs)
+            ui = redraw_ui(win,ui)
         elif inp != "" and inp != None:
             print(type(inp))
             print(inp)
