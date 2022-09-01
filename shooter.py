@@ -5,7 +5,7 @@ import os
 import math
 import time
 
-from graphics import GraphWin, Circle, Point, update, Rectangle, Text
+from graphics import GraphWin, Circle, Point, update, Rectangle, Text, Entry
 from screeninfo import get_monitors
 
 
@@ -30,6 +30,8 @@ settings = {
     "projectile_speed": {"value": 16,"modifiable": True},
     "projectile_max_distance": {"value": 400,"modifiable":True},
     "extra_radius": {"value": 5,"modifiable":True},
+    "max_name_len": {"value": 20,"modifiable":False},
+    "xset_default": {"value": 70,"modifiable":False},
     "keys": {"modifiable":True,    
         "move_up": {"value": "Up","modifiable": True},
         "move_down": {"value": "Down","modifiable": True},
@@ -70,8 +72,32 @@ all_guns = [
 ]
 
 
+high_scores = [
+    {"name": "Pedro Sanchez","score":1000},
+    {"name": "Napoleon Dynamite","score":900},
+    {"name": "Kip Dynamite","score":800},
+    {"name": "Uncle Rico","score":700},
+    {"name": "Deb","score":600},
+    {"name": "Rex","score":500},
+    {"name": "Lafawnduh","score":400},
+    {"name": "Tina","score":300},
+    {"name": "Summer","score":200},
+    {"name": "Starla","score":100},
+    {"name": "","score":0},
+    {"name": "","score":0},
+]
+
+
 def clear():
     _ = os.system('clear')
+    
+    
+def set_xset():
+    os.system('xset r rate {}'.format(settings["xset_default"]["value"]))
+    
+    
+def reset_xset():
+    os.system('xset r rate')
     
     
 def calculate_top_boundary():
@@ -260,19 +286,20 @@ def spawn_mob(win,score):
     mob["radius"] = mob["size"] + border_width
     
     spawn_side = random.choice(["top","bottom","left","right"])
+    border_gap = mob["radius"] + settings["extra_radius"]["value"]
     if spawn_side == "top":
         centerX = random.randrange(
-            mob["radius"]+settings["top_boundary"]["value"],settings["window_x"]["value"]-mob["radius"])
-        centerY = mob["radius"]+settings["top_boundary"]["value"]
+            mob["radius"]+settings["top_boundary"]["value"],settings["window_x"]["value"]-border_gap)
+        centerY = border_gap+settings["top_boundary"]["value"]
     elif spawn_side == "bottom":
-        centerX = random.randrange(mob["radius"],settings["window_x"]["value"]-mob["radius"])
-        centerY = settings["window_y"]["value"]-mob["radius"]
+        centerX = random.randrange(mob["radius"],settings["window_x"]["value"]-border_gap)
+        centerY = settings["window_y"]["value"]-border_gap
     elif spawn_side == "left":
-        centerX = mob["radius"]
-        centerY = random.randrange(mob["radius"],settings["window_y"]["value"]-mob["radius"])
+        centerX = border_gap
+        centerY = random.randrange(mob["radius"],settings["window_y"]["value"]-border_gap)
     elif spawn_side == "right":
-        centerX = settings["window_x"]["value"]-mob["radius"]
-        centerY = random.randrange(mob["radius"],settings["window_y"]["value"]-mob["radius"])
+        centerX = settings["window_x"]["value"]-border_gap
+        centerY = random.randrange(mob["radius"],settings["window_y"]["value"]-border_gap)
     
     mob["graphics"] = Circle(Point(centerX,centerY), mob["size"])
     mob["graphics"].setFill(mob["color"])
@@ -937,11 +964,6 @@ def build_ui_box(ui_box,ui_box_P1,ui_box_P2):
     ui_box["text"] = Text(Point(ui_box_center[0],ui_box_center[1]),"")
     ui_box["text"].setTextColor(settings["fg_color"]["value"])
     return(ui_box)
-    
-    
-def draw_main_menu(win):
-    win_ui = ""
-    return(win_ui)
 
 
 def set_weapon_text(win,ui,hero):
@@ -1027,16 +1049,13 @@ def spawn_pickup(origin_x,origin_y,tier):
         pickup["border"] = 5
 
     pickup["radius"] = pickup["hit_box"]+pickup["border"]
-        
-    if origin_x <= pickup["radius"]+settings["extra_radius"]["value"]:
-        origin_x = pickup["radius"]+settings["extra_radius"]["value"]
-    elif origin_x >= settings["window_x"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"]):
-        origin_x = settings["window_x"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"])
-        
-    if origin_y <= pickup["radius"]+settings["extra_radius"]["value"]:
-        origin_y = pickup["radius"]+settings["extra_radius"]["value"]
-    elif origin_y >= settings["window_y"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"]):
-        origin_y = settings["window_y"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"])
+    
+    origin_x = random.randrange(
+        pickup["radius"]+settings["extra_radius"]["value"],
+        settings["window_x"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"]))
+    origin_y = random.randrange(
+        pickup["radius"]+settings["extra_radius"]["value"]+settings["top_boundary"]["value"],
+        settings["window_y"]["value"]-(pickup["radius"]+settings["extra_radius"]["value"]))
             
     pickup["graphics"] = Circle(Point(origin_x,origin_y),pickup["hit_box"])
     pickup["graphics"].setFill(fill)
@@ -1103,22 +1122,233 @@ def calc_pickups_decay(pickups):
             #print(pickup["decay"])
     pickups = pickups_list
     return(pickups)
+    
+    
+def draw_main_menu(win):
+    win_ui = []
+    start_box,title_box,highscore_box,exit_box = {},{},{},{}
+    
+    ## Calculate middle of screen, and size of buttons ##
+    button_height = settings["window_y"]["value"]/8
+    button_width = round(settings["window_x"]["value"]/3)
+    button_gap = button_height
+    centerx,centery=settings["window_x"]["value"]/2,settings["window_y"]["value"]/2
+    
+    ## Calculate box corner points ##
+    title_box_P1 = [centerx-(button_width/2),button_height/2]
+    title_box_P2 = [centerx+(button_width/2),title_box_P1[1]+button_height]
+    
+    ## Place start box below title ##
+    start_box_P1 = [title_box_P1[0],title_box_P1[1]+(button_gap*2)]
+    start_box_P2 = [title_box_P2[0],title_box_P2[1]+(button_gap*2)]
+    
+    ## Place highscore box below start box ##
+    highscore_box_P1 = [start_box_P1[0],start_box_P1[1]+(button_gap*2)]
+    highscore_box_P2 = [start_box_P2[0],start_box_P2[1]+(button_gap*2)]
+    
+    ## Place exit box below highscore box ##
+    exit_box_P1 = [highscore_box_P1[0],highscore_box_P1[1]+(button_gap*2)]
+    exit_box_P2 = [highscore_box_P2[0],highscore_box_P2[1]+(button_gap*2)]
+    
+    ## Build and modify items as needed ##
+    title_box = build_ui_box(title_box,title_box_P1,title_box_P2)
+    title_box["text"].setSize(36)
+    title_box["text"].setTextColor(settings["fg_color"]["value"])
+    title_box["text"].setText("Shooter.py\nSlam Jones 2022")
+    title_box["box"].setOutline(settings["bg_color"]["value"])
+    
+    start_box = build_ui_box(start_box,start_box_P1,start_box_P2)
+    start_box["text"].setSize(36)
+    start_box["text"].setTextColor(settings["fg_color"]["value"])
+    start_box["text"].setText("Start!")
+    start_box["box"].setWidth(3)
+    
+    highscore_box = build_ui_box(highscore_box,highscore_box_P1,highscore_box_P2)
+    highscore_box["text"].setSize(36)
+    highscore_box["text"].setTextColor(settings["fg_color"]["value"])
+    highscore_box["text"].setText("High Scores")
+    highscore_box["box"].setWidth(3)
+    
+    exit_box = build_ui_box(exit_box,exit_box_P1,exit_box_P2)
+    exit_box["text"].setSize(36)
+    exit_box["text"].setTextColor(settings["fg_color"]["value"])
+    exit_box["text"].setText("Exit")
+    exit_box["box"].setWidth(3)
+    
+    ## Draw items ##
+    title_box["box"].draw(win)
+    title_box["text"].draw(win)
+    start_box["box"].draw(win)
+    start_box["text"].draw(win)
+    highscore_box["box"].draw(win)
+    highscore_box["text"].draw(win)
+    exit_box["box"].draw(win)
+    exit_box["text"].draw(win)
+    
+    win_ui = [title_box,start_box,highscore_box,exit_box]
+    return(win_ui)
+
+
+def undraw_ui(ui):
+    for item in ui:
+        item["box"].undraw()
+        item["text"].undraw()
+    
+    
+def main_menu(win):
+    exit = False
+    start = False
+    while not exit:
+        menu_ui = draw_main_menu(win)
+        clickPoint = win.getMouse()
+        action = check_click(clickPoint,menu_ui)
+        #print(clickPoint)
+        #print(action)
+        if action == "Start!":
+            start = True
+        elif action == "High Scores":
+            start = False
+            high_score_ui = draw_high_score(win)
+            win.getMouse()
+            for item in high_score_ui:
+                item.undraw()
+        elif action == "Exit":
+            exit = True
+        if start:
+            clear_screen_all(win)
+            menu_ui = undraw_ui(menu_ui)
+            score = play(win)
+            check_new_high_score(win,score)
+            draw_high_score(win)
+            #win.getMouse()
+            clear_screen_all(win)
+            start = False
+            
+            
+def check_click(clickPoint,ui):
+    #print(clickPoint)
+    clickX,clickY = clickPoint.getX(),clickPoint.getY()
+    for item in ui:
+        P1x,P1y = item["box"].getP1().getX(),item["box"].getP1().getY()
+        P2x,P2y = item["box"].getP2().getX(),item["box"].getP2().getY()
+        #print(P1x,P2x,P1y,P2y)
+        if clickX >= P1x and clickX <= P2x and clickY >= P1y and clickY <= P2y:
+            flash_ui_item(item)
+            return(item["text"].getText())
+    return()
+
+
+def flash_ui_item(ui_item):
+    wait_time = 0.1
+    ui_item["box"].setFill(settings["fg_color"]["value"])
+    update()
+    time.sleep(wait_time)
+    ui_item["box"].setFill(settings["bg_color"]["value"])
+    update()
+    time.sleep(wait_time/2)
+    
+    
+def check_new_high_score(win,score):
+    index = 0
+    for item in high_scores:
+        if score >= item["score"] and score > 0:
+            name = get_score_name(win)
+            high_score = {"name": name, "score":score}
+            high_scores.insert(index,high_score)
+            high_scores.remove(high_scores[-1])
+            return
+        index += 1
+
+        
+def get_score_name(win):
+    reset_xset()
+    #_=os.system('xset r rate')
+    centerx,centery=settings["window_x"]["value"]/2,settings["window_y"]["value"]/2
+    topy = round(settings["window_y"]["value"] * 0.25)
+    box_size_x,box_size_y = settings["window_x"]["value"]/2,settings["window_y"]["value"]/2
+    input_title = Text(Point(centerx,topy), "Enter your name, click when done: ")
+    input_title.setTextColor(settings["fg_color"]["value"])
+    input_title.setSize(26)
+    input_box = Entry(Point(centerx,centery), settings["max_name_len"]["value"])
+    input_title.draw(win)
+    input_box.draw(win)
+    win.getMouse()
+    input_box.undraw()
+    input_title.undraw()
+    set_xset()
+    #_=os.system('xset r rate 70')
+    return(input_box.getText())
+    
+    
+def draw_high_score(win):
+    high_score_ui = []
+    centerx,centery=settings["window_x"]["value"]/2,settings["window_y"]["value"]/2
+    topy = round(settings["window_y"]["value"] * 0.25)
+    scores_string = ""
+    scores_title = Text(Point(centerx,topy),"High Scores")
+    scores_title.setSize(30)
+    scores_title.setTextColor(settings["fg_color"]["value"])
+    scores_text = Text(Point(centerx,centery),scores_string)
+    for item in high_scores:
+        scores_string += str(item["name"])+": "+str(item["score"])+"\n"
+    scores_text.setText(scores_string)
+    scores_text.setTextColor(settings["fg_color"]["value"])
+    box_width = round(settings["window_x"]["value"]*0.15)
+    box_height = round(settings["window_y"]["value"]*0.35)
+    scores_box_P1 = (centerx-box_width,centery-box_height)
+    scores_box_P2 = (centerx+box_width,centery+box_height)
+    scores_box = Rectangle(
+        Point(scores_box_P1[0],scores_box_P1[1]),Point(scores_box_P2[0],scores_box_P2[1]))
+    scores_box.setFill(settings["bg_color"]["value"])
+    scores_box.setOutline(settings["fg_color"]["value"])
+    scores_box.setWidth(3)
+    scores_box.draw(win)
+    scores_text.draw(win)
+    scores_title.draw(win)
+    high_score_ui.append(scores_box)
+    high_score_ui.append(scores_text)
+    high_score_ui.append(scores_title)
+    return(high_score_ui)
+
+
+def clear_screen_all(win):
+    for item in win.items:
+        print(item)
+        item.undraw()
+    x = Rectangle(Point(0,0),
+                  Point(settings["window_x"]["value"],settings["window_y"]["value"]))
+    x.setFill("black")
+    to_draw = [x]
+    draw_to_draw(win,to_draw)
+    
+
+def clear_playfield(win,mobs,ui):
+    x = Rectangle(Point(0,settings["window_y"]["value"]/10),
+                  Point(settings["window_x"]["value"],settings["window_y"]["value"]))
+    x.setFill("black")
+    to_draw = [x]
+    draw_to_draw(win,to_draw)
+    redraw_item_group(win,mobs)
+    ui = redraw_ui(win,ui)
+    return(ui)
+
+
+def clear_screen(win,mobs,ui):
+    ui = clear_playfield(win,mobs,ui)
+    ui = ""
+    return(ui)
 
     
 def init():
     clear()
     collect_screen_info()
     calculate_top_boundary()
+    set_xset()
     
     
 def main():
     win = open_window()
     main_menu(win)
-    
-    
-def main_menu(win):
-    menu_ui = draw_main_menu(win)
-    play(win)
     
     
 def play(win):
@@ -1171,6 +1401,11 @@ def play(win):
             hero["tangible"] = False
         else:
             hero["tangible"] = True
+            
+        ## Check if hero is dead, or play should be stopped ##
+        if hero["health"] <= 0:
+            play = False
+            return(score)
         
         ## Process current pickups, start counter for spawning a new one if needed ##
         hero,pickups,info_string = check_pickup_collision(win,hero,pickups)
@@ -1233,7 +1468,8 @@ def play(win):
         ## BASIC CONTROLS ##
         ## ESCAPE
         if inp == "Escape":
-            play=False
+            play = False
+            return(score)
         ## SHOOT
         if inp == settings["keys"]["shoot"]["value"]:
             if shoot:
@@ -1270,13 +1506,10 @@ def play(win):
             
         ## ## OTHER CONTROLS ## ##
         elif inp == "e":
-            x = Rectangle(Point(0,settings["window_y"]["value"]/10),
-                          Point(settings["window_x"]["value"],settings["window_y"]["value"]))
-            x.setFill("black")
-            to_draw = [x]
-            draw_to_draw(win,to_draw)
-            redraw_item_group(win,mobs)
-            ui = redraw_ui(win,ui)
+            for item in win.items:
+                item.undraw()
+            #print(win.items)
+            ui = clear_playfield(win,mobs,ui)
         elif inp != "" and inp != None:
             print(type(inp))
             print(inp)
@@ -1304,10 +1537,12 @@ def play(win):
                 total_frames += last_x_frames[i]
             recent_fps = total_frames/settings["frame_rate"]["value"]
             last_x_frames.remove(last_x_frames[0])
+    return(score)
     
 
 def farewell():
     clear()
+    reset_xset()
 
 
 init()
