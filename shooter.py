@@ -4,6 +4,7 @@ import random
 import os
 import math
 import time
+import json
 
 from graphics import GraphWin, Circle, Point, update, Rectangle, Text, Entry
 from screeninfo import get_monitors
@@ -72,24 +73,35 @@ all_guns = [
 ]
 
 
-high_scores = [
-    {"name": "Pedro Sanchez","score":1000},
-    {"name": "Napoleon Dynamite","score":900},
-    {"name": "Kip Dynamite","score":800},
-    {"name": "Uncle Rico","score":700},
-    {"name": "Deb","score":600},
-    {"name": "Rex","score":500},
-    {"name": "Lafawnduh","score":400},
-    {"name": "Tina","score":300},
-    {"name": "Summer","score":200},
-    {"name": "Starla","score":100},
-    {"name": "","score":0},
-    {"name": "","score":0},
-]
+#high_scores = [
+#    {"name": "Pedro Sanchez","score":1000},
+#    {"name": "Napoleon Dynamite","score":900},
+#    {"name": "Kip Dynamite","score":800},
+#    {"name": "Uncle Rico","score":700},
+#    {"name": "Deb","score":600},
+#    {"name": "Rex","score":500},
+#    {"name": "Lafawnduh","score":400},
+#    {"name": "Tina","score":300},
+#    {"name": "Summer","score":200},
+#    {"name": "Starla","score":100},
+#    {"name": "","score":0},
+#    {"name": "","score":0},
+#]
 
 
 def clear():
     _ = os.system('clear')
+    
+    
+def load_high_scores():
+    with open ("high_scores.json","r") as score_data:
+        high_scores = json.load(score_data)
+    return(high_scores)
+
+
+def save_high_scores():
+    with open("high_scores.json","w") as json_file:
+        json.dump(high_scores, json_file)
     
     
 def set_xset():
@@ -1400,6 +1412,8 @@ def init():
     collect_screen_info()
     calculate_top_boundary()
     set_xset()
+    global high_scores
+    high_scores = load_high_scores()
     
     
 def main():
@@ -1621,6 +1635,7 @@ def play(win):
 def farewell():
     clear()
     reset_xset()
+    save_high_scores()
 
 
 init()
