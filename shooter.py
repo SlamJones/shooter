@@ -147,7 +147,7 @@ def draw_reticule(win,hero,centerX,centerY):
 
 def move_hero(win,hero):
     if check_hero_border(win,hero):
-        move_x,move_y = calculate_move_xy(hero["direction"],settings["hero_speed"]["value"])
+        move_x,move_y = calculate_move_xy(hero["direction"],hero["speed"])
         hero["graphics"].move(move_x,move_y)
     hero = move_reticule(win,hero)
     return(hero)
@@ -175,6 +175,8 @@ def build_hero(win):
     hero["animation"] = []
     hero["tangible"] = True
     hero["boosts"] = []
+    hero["speed"] = settings["hero_speed"]["value"]
+    hero["base_speed"] = hero["speed"]
     hero = draw_hero(win,hero)
     return(hero)
 
@@ -1034,6 +1036,15 @@ def spawn_pickup(origin_x,origin_y,tier):
         pickup = {"p_type":"Health","name":"HP+1","use":"immediate","value":1,
                   "decay_time":300,"decay":0,"hit_box":20,"border":5}
         fill,outline = "red","cyan"
+    elif roll >= 50:
+        typeroll = random.randrange(0,2)
+        if typeroll == 1:
+            pickup = {"p_type":"Speed","name":"Speed Boost","use":"temp","value":[600,1],
+                      "decay_time":300,"decay":0,"hit_box":20,"border":5}
+        else:
+            pickup = {"p_type":"Speed","name":"Speed Boost","use":"perm","value":0.1,
+                      "decay_time":300,"decay":0,"hit_box":20,"border":5}
+        fill,outline = "yellow3","cyan"
     else:
         gun_choices = []
         fill,outline = "green3","cyan"
@@ -1102,8 +1113,29 @@ def hero_pickup(hero,pickup):
     elif pickup["p_type"] == "Health":
         hero["health"] += pickup["value"]
         info_string="Health increased! (+{})".format(pickup["value"])
+    elif pickup["p_type"] == "Speed":
+        if pickup["use"] == "perm":
+            hero["speed"] += pickup["value"]
+            hero["base_speed"] += pickup["value"]
+            info_string = "Permanent speed boost!"
+        elif pickup["use"] == "temp":
+            hero["boosts"].append(
+                {"type":"speed","dur":pickup["value"][1],"tick":0,"value":pickup["value"][0]})
+            info_string = "Temporary speed boost!"
     return(hero,info_string)
 
+
+def hero_boosts(hero):
+    boosts_copy = boosts.copy()
+    for boost in boosts:
+        boost["tick"] += 1
+        if boost["tick"] >= boost["dur"]:
+            boosts_copy.remove(boost)
+        else:
+            if boost["type"] == "speed":
+                hero["speed"] = hero["base_speed"] + boost["value"]
+    return(hero)
+    
 
 def set_hero_gun_settings(hero,gun):
     hero["fire_rate"] = gun["fire_rate"]
@@ -1219,7 +1251,7 @@ def main_menu(win):
             menu_ui = undraw_ui(menu_ui)
             score = play(win)
             check_new_high_score(win,score)
-            draw_high_score(win)
+            high_score_ui = draw_high_score(win)
             #win.getMouse()
             clear_screen_all(win)
             start = False
@@ -1250,14 +1282,15 @@ def flash_ui_item(ui_item):
     
 def check_new_high_score(win,score):
     index = 0
-    for item in high_scores:
-        if score >= item["score"] and score > 0:
-            name = get_score_name(win)
-            high_score = {"name": name, "score":score}
-            high_scores.insert(index,high_score)
-            high_scores.remove(high_scores[-1])
-            return
-        index += 1
+    if score > 0:
+        for item in high_scores:
+            if score >= item["score"]:
+                name = get_score_name(win)
+                high_score = {"name": name, "score":score}
+                high_scores.insert(index,high_score)
+                high_scores.remove(high_scores[-1])
+                return
+            index += 1
 
         
 def get_score_name(win):
@@ -1468,6 +1501,7 @@ def play(win):
         ## BASIC CONTROLS ##
         ## ESCAPE
         if inp == "Escape":
+            hero["health"] = 0
             play = False
             return(score)
         ## SHOOT
