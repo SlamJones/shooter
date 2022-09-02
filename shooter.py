@@ -13,7 +13,7 @@ settings = {
     "window_x": {"value": 1280,"modifiable": False},
     "window_y": {"value": 960,"modifiable": False},
     "top_boundary": {"value": 100,"modifiable":False},
-    "frame_rate": {"value": 30,"modifiable": True},
+    "frame_rate": {"value": 40,"modifiable": True},
     "debug_mode": {"value": False,"modifiable": True},
     "bg_color": {"value": "black","modifiable": True},
     "fg_color": {"value": "white","modifiable": True},
@@ -968,6 +968,29 @@ def build_ui_box(ui_box,ui_box_P1,ui_box_P2):
     return(ui_box)
 
 
+def build_debug_ui(win):
+    debug_ui = Text(
+        Point(settings["window_x"]["value"]/2,
+              settings["top_boundary"]["value"]+settings["extra_radius"]["value"]*3),"")
+    debug_ui.setTextColor(settings["fg_color"]["value"])
+    return(debug_ui)
+
+
+def toggle_debug_ui(win,debug_text):
+    if settings["debug_mode"]["value"]:
+        debug_text.undraw()
+        settings["debug_mode"]["value"] = False
+    else:
+        debug_text.draw(win)
+        settings["debug_mode"]["value"] = True
+        
+        
+def update_debug_ui(win,debug_ui,string):
+    print(debug_ui)
+    debug_ui.setText(str(string))
+    #return(debug_ui)
+
+
 def set_weapon_text(win,ui,hero):
     string = "{}\n{}".format(hero["gun"]["name"],str(hero["gun"]["ammo"]))
     ui["weapon_box"]["text"].setText(string)
@@ -1044,10 +1067,10 @@ def spawn_pickup(origin_x,origin_y,tier):
         else:
             pickup = {"p_type":"Speed","name":"Speed Boost","use":"perm","value":0.1,
                       "decay_time":300,"decay":0,"hit_box":20,"border":5}
-        fill,outline = "yellow3","cyan"
+        fill,outline = "yellow2","cyan"
     else:
         gun_choices = []
-        fill,outline = "green3","cyan"
+        fill,outline = "green2","cyan"
         max_roll = 100
         gun_roll = random.randrange(0,max_roll)
         
@@ -1398,11 +1421,15 @@ def play(win):
     last_x_frames = []
     recent_fps,avg_fps,frames,ticks,efps,last_ms,score,max_proj_counted,max_mob_counted = 0,0,0,0,0,0,0,0,0
     shoot_ticks = 100
+    ms_times = {}
+    ms_max = {}
     start_time = time.time()
     mob_speed = settings["mob_speed"]["value"]
     text_queue = []
     pickups = []
     fps_factor = 1.0
+    debug_ui = build_debug_ui(win)
+    print(debug_ui)
     
     ## MAIN PLAY LOOP ##
     while play:
@@ -1422,6 +1449,8 @@ def play(win):
             str(len(projectiles)),str(max_proj_counted),str(len(mobs)),str(max_mob_counted)))
         ui = set_weapon_text(win,ui,hero)
         ui["hp_box"]["text"].setText("Health:\n{}".format(hero["health"]))
+        ms_times = {}
+        ms_times["ui"] = round((time.time() - start_time)*1000)
         
         projectiles = move_projectiles(win,projectiles)
         ## PROCESS MOVEMENT AND STUFF ##
@@ -1429,11 +1458,13 @@ def play(win):
         mobs_before = mobs.copy()
         projectiles,mobs = check_for_projectile_hits(win,projectiles,mobs)
         mobs = move_mobs(win,mobs,hero)
+        ms_times["move"] = round(((time.time() - start_time)*1000)-ms_times["ui"])
         hero = check_hero_mob_collisions(win,hero,mobs)
         if len(hero["animation"]) > 0:
             hero["tangible"] = False
         else:
             hero["tangible"] = True
+        ms_times["mhits"] = round(((time.time() - start_time)*1000)-ms_times["move"])
             
         ## Check if hero is dead, or play should be stopped ##
         if hero["health"] <= 0:
@@ -1447,12 +1478,14 @@ def play(win):
         hero = check_hero_ammo(hero)
         pickups = calc_pickups_decay(pickups)
         pickups = pickup_spawn_controller(win,hero,pickups,score)
+        ms_times["pkps"] = round(((time.time() - start_time)*1000)-ms_times["mhits"])
         
         ## Process animations once we have checked for and collected collisions ##
         ui,text_queue = text_animation_queue(win,ui,text_queue)
         mobs.append(hero)
         mobs = animation_queue(win,mobs)
         mobs.remove(hero)
+        ms_times["anim"] = round(((time.time() - start_time)*1000)-ms_times["pkps"])
         
         ## Copy mob list with current modifications ##
         mobs_after = mobs.copy()
@@ -1480,6 +1513,7 @@ def play(win):
                 pickup["graphics"].undraw()
                 pickup["graphics"].draw(win)
         mobs = spawn_controller(win,mobs,max_mobs,score)
+        ms_times["mobs"] = round(((time.time() - start_time)*1000)-ms_times["anim"])
         
         ## Check if player can shoot ##
         shoot_ticks += 1
@@ -1505,7 +1539,7 @@ def play(win):
             play = False
             return(score)
         ## SHOOT
-        if inp == settings["keys"]["shoot"]["value"]:
+        elif inp == settings["keys"]["shoot"]["value"]:
             if shoot:
                 new_projectiles,score=shoot_button(win,hero,score,projectiles)
                 shoot_ticks=0
@@ -1517,6 +1551,7 @@ def play(win):
         ## PAUSE
         elif inp == settings["keys"]["pause"]["value"]:
             pause = bool_switch(pause)
+            time.sleep(0.2)
             if pause:
                 ui = set_info_text(win,ui,"Paused")
             else:
@@ -1544,16 +1579,23 @@ def play(win):
                 item.undraw()
             #print(win.items)
             ui = clear_playfield(win,mobs,ui)
+        elif inp == "d":
+            toggle_debug_ui(win,debug_ui)
         elif inp != "" and inp != None:
             print(type(inp))
             print(inp)
             mouse = False
-
+            
+        timer = round(((time.time() - start_time)*1000)-ms_times["mobs"])
+        ms_times["input"] = timer
             
         ## FINALLY, UPDATE THE SCREEN ACCORDING TO FRAME RATE ##
         update(settings["frame_rate"]["value"])
         
         ## AND THEN CHECK FPS CALCULATIONS ##
+        ms_times["update"] = round(((time.time() - start_time)*1000)-ms_times["input"])
+        string = str(ms_times)
+        update_debug_ui(win,debug_ui,string)
         timer = time.time() - start_time
         last_ms = timer
         
@@ -1564,6 +1606,8 @@ def play(win):
         avg_fps = frames/ticks
         if efps < lowest_fps:
             lowest_fps = efps
+        
+        ## Calculate average fps for past x ticks, where x is settings["frame_rate"]["value"] ##
         last_x_frames.append(efps)
         total_frames = 0
         if len(last_x_frames) >= settings["frame_rate"]["value"]:
