@@ -80,21 +80,6 @@ all_guns = [
 ]
 
 
-#high_scores = [
-#    {"name": "Pedro Sanchez","score":1000},
-#    {"name": "Napoleon Dynamite","score":900},
-#    {"name": "Kip Dynamite","score":800},
-#    {"name": "Uncle Rico","score":700},
-#    {"name": "Deb","score":600},
-#    {"name": "Rex","score":500},
-#    {"name": "Lafawnduh","score":400},
-#    {"name": "Tina","score":300},
-#    {"name": "Summer","score":200},
-#    {"name": "Starla","score":100},
-#    {"name": "","score":0},
-#    {"name": "","score":0},
-#]
-
 
 def clear():
     _ = os.system('clear')
