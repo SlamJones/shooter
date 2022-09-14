@@ -14,7 +14,7 @@ settings = {
     "window_x": {"value": 1280,"modifiable": False},
     "window_y": {"value": 960,"modifiable": False},
     "top_boundary": {"value": 100,"modifiable":False},
-    "frame_rate": {"value": 40,"modifiable": True},
+    "frame_rate": {"value": 60,"modifiable": True},
     "debug_mode": {"value": False,"modifiable": True},
     "bg_color": {"value": "black","modifiable": True},
     "fg_color": {"value": "white","modifiable": True},
@@ -47,28 +47,35 @@ settings = {
 
 all_guns = [
     {"p_type":"Gun","name":"Shotgun","type":"Spread","use":"immediate","value":50,"tier":1,
-     "decay_time":300,"decay":0,"passthru":0,
+     "decay_time":300,"decay":0,"passthru":0,"price":10000,
      "damage":0.5,"fire_rate":12,"angle":45,"n":7,"range":settings["projectile_max_distance"]["value"]/2},
+    
     {"p_type":"Gun","name":"Shatter","type":"Shatter","use":"immediate","value":50,"tier":1,
-     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,"price":25000,
      "damage":1,"fire_rate":6,"angle":30,"n":3,"range":settings["projectile_max_distance"]["value"]},
+    
     {"p_type":"Gun","name":"Split","type":"Split","use":"immediate","value":50,"tier":1,
-     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,"price":25000,
      "damage":1,"fire_rate":6,"angle":30,"n":3,"range":settings["projectile_max_distance"]["value"]},
+    
     {"p_type":"Gun","name":"Wide","type":"Wide","use":"immediate","value":50,"tier":2,
-     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":1,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":1,"price":100000,
      "damage":1,"fire_rate":6,"angle":10,"n":4,"range":settings["projectile_max_distance"]["value"]},
+    
     {"p_type":"Gun","name":"Heavy Pistol","type":"Basic","use":"immediate","value":50,"tier":2,
-     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":1,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":1,"price":100000,
      "damage":2,"fire_rate":9,"angle":30,"n":1,"range":settings["projectile_max_distance"]["value"]},
+    
     {"p_type":"Gun","name":"Rifle","type":"Basic","use":"immediate","value":50,"tier":2,
-     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":2,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":2,"price":100000,
      "damage":1,"fire_rate":9,"angle":30,"n":1,"range":settings["projectile_max_distance"]["value"]*2},
+    
     {"p_type":"Gun","name":"Heavy Shotgun","type":"Spread","use":"immediate","value":50,"tier":2,
-     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":1,
+     "decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":1,"price":250000,
      "damage":1,"fire_rate":8,"angle":45,"n":7,"range":settings["projectile_max_distance"]["value"]/2},
+    
     {"p_type":"Gun","name":"Split > Shatter","type":"Split > Shatter","use":"immediate","tier":2,
-     "value":50,"decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,
+     "value":50,"decay_time":300,"decay":0,"hit_box":10,"border":5,"passthru":0,"price":250000,
      "damage":1,"fire_rate":6,"angle":30,"n":3,"range":settings["projectile_max_distance"]["value"]}
 ]
 
@@ -1539,12 +1546,18 @@ def play(win):
         ## THEN, PROCESS PLAYER CONTROLS ##
         if pause:
             win.getKey()
-        elif not mouse and not pause:
+        else:
             inp = win.checkKey()
-        elif mouse and not pause:
-            inp = win.checkMouse()
-        if settings["debug_mode"]["value"] and inp != "":
-            print(inp)
+        #elif not mouse and not pause:
+        #    inp = win.checkKey()
+        #elif mouse and not pause:
+        #    inp = win.checkMouse()
+        #if settings["debug_mode"]["value"] and inp != "":
+        #    print(inp)
+            
+            
+        timer = round(((time.time() - start_time)*1000)-ms_times["mobs"])
+        ms_times["input1"] = timer
             
         ## BASIC CONTROLS ##
         ## ESCAPE
@@ -1600,14 +1613,14 @@ def play(win):
             print(inp)
             mouse = False
             
-        timer = round(((time.time() - start_time)*1000)-ms_times["mobs"])
-        ms_times["input"] = timer
+        timer = round(((time.time() - start_time)*1000)-ms_times["input1"])
+        ms_times["input2"] = timer
             
         ## FINALLY, UPDATE THE SCREEN ACCORDING TO FRAME RATE ##
         update(settings["frame_rate"]["value"])
         
         ## AND THEN CHECK FPS CALCULATIONS ##
-        ms_times["update"] = round(((time.time() - start_time)*1000)-ms_times["input"])
+        ms_times["update"] = round(((time.time() - start_time)*1000)-ms_times["input2"])
         string = str(ms_times)
         update_debug_ui(win,debug_ui,string)
         timer = time.time() - start_time
