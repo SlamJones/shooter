@@ -17,6 +17,7 @@ settings = {
     "frame_rate": {"value": 60,"modifiable": True},
     "debug_mode": {"value": False,"modifiable": True},
     "bg_color": {"value": "black","modifiable": True},
+    "bg_flash": {"value": "red","modifiable":True},
     "fg_color": {"value": "white","modifiable": True},
     "hero_size": {"value": 10,"modifiable": True},
     "hero_color": {"value": "aqua","modifiable": True},
@@ -662,6 +663,15 @@ def i_flash_mob(mob):
         print(mob)
     return(mob)
 
+
+def screen_flash(mob):
+    mob["animation"] = (
+        {"instruction": "screen_flash","tick":0,"flash_ticks":20,"flash_on":True,
+         "flash_color":"white","start_color":mob["color"]})
+    if settings["debug_mode"]["value"]:
+        print(mob)
+    return(mob)
+
     
 def explode_mob(win,mob):
     mob["tangible"] = False
@@ -702,8 +712,8 @@ def animation_queue(win,items):
                 ## For explode, increase item size by step_value per tick until it reaches max value ##
                 if item["size"] < item["animation"]["max_value"]:
                     if instruction == "pop":
-                        item["graphics"].undraw()
                         item["speed"] = 0
+                    item["graphics"].undraw()
                     item["size"] += item["animation"]["step_value"]
                     size = item["size"]
 
@@ -711,18 +721,20 @@ def animation_queue(win,items):
                         Point(item["graphics"].getCenter().getX(),item["graphics"].getCenter().getY()),size)
                     item_id = item["index"]
                     item["graphics"].setFill(settings["mob_splat_color"]["value"][item_id])
-                    if instruction == "explode":
-                        item["graphics"].setOutline(settings["mob_splat_color"]["value"][item_id])
-                    elif instruction == "pop":
-                        item["graphics"].setOutline(item["color"])
+                    #if instruction == "explode":
+                    #    item["graphics"].setOutline(settings["mob_splat_color"]["value"][item_id])
+                    #elif instruction == "pop":
+                        #item["graphics"].setOutline(item["color"])
+                    item["graphics"].setOutline(item["color"])
                     item["graphics"].draw(win)
                 
                 ## Once it has reached full size, remove it from items to help iteration speed ##
                 if item["size"] >= item["animation"]["max_value"]:
                     item["delete"] = True
                     item["graphics"].setOutline(settings["mob_splat_color"]["value"][item_id])
-                    if instruction == "pop":
-                        pass
+                    item["graphics"].undraw()
+                    #if instruction == "pop":
+                        #pass
                         #item["graphics"].undraw()
                         
             #### FLASH ####
@@ -745,12 +757,20 @@ def animation_queue(win,items):
                         item["animation"]["flash_on"] = switch_bool(item["animation"]["flash_on"])
                 if item["animation"]["flash_on"]:
                     item["graphics"].setFill("white")
+                    win.setBackground(settings["bg_flash"]["value"])
                 else:
                     item["graphics"].setFill(item["color"])
+                    win.setBackground(settings["bg_color"]["value"])
                 item["animation"]["tick"] += 1
                 item["tangible"] = False
             elif instruction == "speed_flash":
                 pass
+            elif instruction == "screen_flash":
+                if item["animation"]["tick"] >= item["animation"]["flash_ticks"]:
+                    win.setBackground(settings["bg_flash"]["value"])
+                else:
+                    win.setBackground(settings["bg_color"]["value"])
+                item["animation"]["tick"] += 1
     ## Return the updated queue to be called next frame ##
     return(items)
 
@@ -811,6 +831,7 @@ def check_hero_mob_collisions(win,hero,mobs):
                 distance = distance_between_objects(hero,mob)
                 if distance <= touch_distance:
                     hero = i_flash_mob(hero)
+                    #hero = screen_flash(hero)
                     hero["health"] -= mob["damage"]
                     hero["tangible"] = False
     return(hero)
@@ -1321,8 +1342,10 @@ def check_new_high_score(win,score):
 
         
 def get_score_name(win):
+    ## Reset xset so that entering name is easier for player ##
     reset_xset()
     #_=os.system('xset r rate')
+    ## Determine where to draw the items ##
     centerx,centery=settings["window_x"]["value"]/2,settings["window_y"]["value"]/2
     topy = round(settings["window_y"]["value"] * 0.25)
     box_size_x,box_size_y = settings["window_x"]["value"]/2,settings["window_y"]["value"]/2
@@ -1593,6 +1616,8 @@ def play(win):
             ui = clear_playfield(win,mobs,ui)
         elif inp == "d":
             toggle_debug_ui(win,debug_ui)
+        elif inp == "f":
+            win.setBackground(settings["bg_flash"]["value"])
         elif inp != "" and inp != None:
             print(type(inp))
             print(inp)
