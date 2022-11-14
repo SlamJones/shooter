@@ -106,7 +106,7 @@ def reset_xset():
     
     
 def calculate_top_boundary():
-    settings["top_boundary"]["value"] = settings["window_y"]["value"] / 10
+    settings["top_boundary"]["value"] = int(settings["window_y"]["value"] / 10)
     
     
 def collect_screen_info():
@@ -114,8 +114,8 @@ def collect_screen_info():
     try:
         for m in get_monitors():
             print(m)
-        settings["window_x"]["value"] = m.width
-        settings["window_y"]["value"] = m.height - 100
+        settings["window_x"]["value"] = int(m.width)
+        settings["window_y"]["value"] = int(m.height - 100)
     except:
         print("Could not gather screen info! Using default 1280x960")
 
@@ -295,6 +295,8 @@ def spawn_mob(win,score):
     spawn_side = random.choice(["top","bottom","left","right"])
     border_gap = mob["radius"] + settings["extra_radius"]["value"]
     if spawn_side == "top":
+        print("Mob radius: {}\n top_boundary: {}\n window_x: {}\n border_gap: {}".format(
+            mob["radius"],settings["top_boundary"]["value"],settings["window_x"]["value"],border_gap))
         centerX = random.randrange(
             mob["radius"]+settings["top_boundary"]["value"],settings["window_x"]["value"]-border_gap)
         centerY = border_gap+settings["top_boundary"]["value"]
@@ -984,6 +986,7 @@ def build_ui(win):
 
 def build_ui_box(ui_box,ui_box_P1,ui_box_P2):
     ui_box_center = [(ui_box_P1[0] + ui_box_P2[0]) / 2,(ui_box_P1[1] + ui_box_P2[1]) / 2]
+    ui_box["type"] = ""
     ui_box["box"] = Rectangle(
         Point(ui_box_P1[0],ui_box_P1[1]),Point(ui_box_P2[0],ui_box_P2[1]))
     ui_box["box"].setFill(settings["bg_color"]["value"])
@@ -991,6 +994,36 @@ def build_ui_box(ui_box,ui_box_P1,ui_box_P2):
     ui_box["text"] = Text(Point(ui_box_center[0],ui_box_center[1]),"")
     ui_box["text"].setTextColor(settings["fg_color"]["value"])
     return(ui_box)
+
+
+def build_dbl_ui_box(ui_box,ui_box_P1,ui_box_P2):
+    border = 20
+    ui_box_center = [(ui_box_P1[0] + ui_box_P2[0]) / 2,(ui_box_P1[1] + ui_box_P2[1]) / 2]
+    ui_box1_center = [(ui_box_P1[0] + ui_box_P2[0]) * 0.25,(ui_box_P1[1] + ui_box_P2[1]) / 2]
+    ui_box2_center = [(ui_box_P1[0] + ui_box_P2[0]) * 0.75,(ui_box_P1[1] + ui_box_P2[1]) / 2]
+    ui_box1_P1x = ui_box_P1[0]
+    ui_box1_P1y = ui_box_P1[1]
+    ui_box1_P2x = ui_box_center[0] - border
+    ui_box1_P2y = ui_box_P2[1]
+    ui_box2_P1x = ui_box_center[0] + border
+    ui_box2_P1y = ui_box_P1[1]
+    ui_box2_P2x = ui_box_P2[0]
+    ui_box2_P2y = ui_box_P2[1]
+    ui_box["type"] = "dbl"
+    ui_box1,ui_box2 = {},{}
+    ui_box1["box"] = Rectangle(
+        Point(ui_box1_P1x,ui_box1_P1y),Point(ui_box1_P2x,ui_box1_P2y))
+    ui_box1["box"].setFill(settings["bg_color"]["value"])
+    ui_box1["box"].setOutline(settings["fg_color"]["value"])
+    ui_box2["box"] = Rectangle(
+        Point(ui_box2_P1x,ui_box2_P1y),Point(ui_box2_P2x,ui_box2_P2y))
+    ui_box2["box"].setFill(settings["bg_color"]["value"])
+    ui_box2["box"].setOutline(settings["fg_color"]["value"])
+    ui_box1["text"] = Text(Point(ui_box1_center[0],ui_box1_center[1]),"")
+    ui_box1["text"].setTextColor(settings["fg_color"]["value"])
+    ui_box2["text"] = Text(Point(ui_box2_center[0],ui_box2_center[1]),"")
+    ui_box2["text"].setTextColor(settings["fg_color"]["value"])
+    return(ui_box1,ui_box2)
 
 
 def build_debug_ui(win):
@@ -1269,6 +1302,110 @@ def draw_main_menu(win):
     return(win_ui)
 
 
+def shop_menu(win):
+    win_ui = []
+    title_box,gun_name_box,gun_desc_box,buttons_box,buttons2_box,buttons3_box = {},{},{},{},{},{}
+    
+    ## Calculate middle of screen, and size of buttons ##
+    button_height = settings["window_y"]["value"]/8
+    button_width = round(settings["window_x"]["value"]*0.9)
+    button_gap = int(button_height*0.25)
+    centerx,centery=settings["window_x"]["value"]/2,settings["window_y"]["value"]/2
+    
+    ## Calculate box corner points ##
+    title_box_P1 = [centerx-(button_width/2),0]
+    title_box_P2 = [centerx+(button_width/2),title_box_P1[1]+button_height]
+    
+    ## Place start box below title ##
+    gun_name_box_P1 = [title_box_P1[0],title_box_P2[1]+button_gap]
+    gun_name_box_P2 = [title_box_P2[0],gun_name_box_P1[1]+button_height]
+    
+    gun_desc_box_P1 = [gun_name_box_P1[0],gun_name_box_P2[1]+button_gap]
+    gun_desc_box_P2 = [gun_name_box_P2[0],gun_desc_box_P1[1]+(button_height*3)]
+    
+    buttons_box_P1 = [gun_desc_box_P1[0],gun_desc_box_P2[1]+button_gap]
+    buttons_box_P2 = [gun_desc_box_P2[0],buttons_box_P1[1]+(button_height/2)]
+    
+    buttons2_box_P1 = [buttons_box_P1[0],buttons_box_P2[1]+button_gap]
+    buttons2_box_P2 = [buttons_box_P2[0],buttons2_box_P1[1]+(button_height/2)]
+    
+    buttons3_box_P1 = [buttons2_box_P1[0],buttons2_box_P2[1]+button_gap]
+    buttons3_box_P2 = [buttons2_box_P2[0],buttons3_box_P1[1]+(button_height/2)]
+    
+    
+    ## Build and modify items as needed ##
+    title_box = build_ui_box(title_box,title_box_P1,title_box_P2)
+    title_box["text"].setSize(30)
+    title_box["text"].setTextColor(settings["fg_color"]["value"])
+    title_box["text"].setText("Baron Hackenstein's Gun and Junk Emporium")
+    title_box["box"].setOutline(settings["bg_color"]["value"])
+    
+    gun_name_box = build_ui_box(gun_name_box,gun_name_box_P1,gun_name_box_P2)
+    gun_name_box["text"].setSize(24)
+    gun_name_box["text"].setTextColor(settings["fg_color"]["value"])
+    gun_name_box["text"].setText("Gun Name")
+    gun_name_box["box"].setWidth(3)
+    
+    gun_desc_box = build_ui_box(gun_desc_box,gun_desc_box_P1,gun_desc_box_P2)
+    gun_desc_box["text"].setSize(16)
+    gun_desc_box["text"].setTextColor(settings["fg_color"]["value"])
+    gun_desc_box["text"].setText("Gun Description")
+    gun_desc_box["box"].setWidth(3)
+    
+    prev_box,next_box = build_dbl_ui_box(buttons_box,buttons_box_P1,buttons_box_P2)
+    prev_box["text"].setSize(16)
+    prev_box["text"].setTextColor(settings["fg_color"]["value"])
+    prev_box["text"].setText("Previous Item")
+    prev_box["box"].setWidth(3)
+    next_box["text"].setSize(16)
+    next_box["text"].setTextColor(settings["fg_color"]["value"])
+    next_box["text"].setText("Next Item")
+    next_box["box"].setWidth(3)
+    
+    buy_box,sell_box = build_dbl_ui_box(buttons2_box,buttons2_box_P1,buttons2_box_P2)
+    buy_box["text"].setSize(16)
+    buy_box["text"].setTextColor(settings["fg_color"]["value"])
+    buy_box["text"].setText("Buy Mode")
+    buy_box["box"].setWidth(3)
+    sell_box["text"].setSize(16)
+    sell_box["text"].setTextColor(settings["fg_color"]["value"])
+    sell_box["text"].setText("Sell Mode")
+    sell_box["box"].setWidth(3)
+    
+    conf_box,exit_box = build_dbl_ui_box(buttons3_box,buttons3_box_P1,buttons3_box_P2)
+    conf_box["text"].setSize(16)
+    conf_box["text"].setTextColor(settings["fg_color"]["value"])
+    conf_box["text"].setText("Confirm")
+    conf_box["box"].setWidth(3)
+    exit_box["text"].setSize(16)
+    exit_box["text"].setTextColor(settings["fg_color"]["value"])
+    exit_box["text"].setText("Exit")
+    exit_box["box"].setWidth(3)
+    
+    ## Draw items ##
+    title_box["box"].draw(win)
+    title_box["text"].draw(win)
+    gun_name_box["box"].draw(win)
+    gun_name_box["text"].draw(win)
+    gun_desc_box["box"].draw(win)
+    gun_desc_box["text"].draw(win)
+    prev_box["box"].draw(win)
+    prev_box["text"].draw(win)
+    next_box["box"].draw(win)
+    next_box["text"].draw(win)
+    buy_box["box"].draw(win)
+    buy_box["text"].draw(win)
+    sell_box["box"].draw(win)
+    sell_box["text"].draw(win)
+    conf_box["box"].draw(win)
+    conf_box["text"].draw(win)
+    exit_box["box"].draw(win)
+    exit_box["text"].draw(win)
+    
+    win_ui = [title_box,gun_name_box,gun_desc_box,prev_box,next_box,buy_box,sell_box,conf_box,exit_box]
+    return(win_ui)
+
+
 def undraw_ui(ui):
     for item in ui:
         item["box"].undraw()
@@ -1478,6 +1615,7 @@ def play(win):
             str(len(projectiles)),str(max_proj_counted),str(len(mobs)),str(max_mob_counted)))
         ui = set_weapon_text(win,ui,hero)
         ui["hp_box"]["text"].setText("Health:\n{}".format(hero["health"]))
+        
         ms_times = {}
         ms_times["ui"] = round((time.time() - start_time)*1000)
         
@@ -1493,6 +1631,7 @@ def play(win):
             hero["tangible"] = False
         else:
             hero["tangible"] = True
+            
         ms_times["mhits"] = round(((time.time() - start_time)*1000)-ms_times["move"])
             
         ## Check if hero is dead, or play should be stopped ##
@@ -1507,6 +1646,7 @@ def play(win):
         hero = check_hero_ammo(hero)
         pickups = calc_pickups_decay(pickups)
         pickups = pickup_spawn_controller(win,hero,pickups,score)
+        
         ms_times["pkps"] = round(((time.time() - start_time)*1000)-ms_times["mhits"])
         
         ## Process animations once we have checked for and collected collisions ##
@@ -1514,6 +1654,7 @@ def play(win):
         mobs.append(hero)
         mobs = animation_queue(win,mobs)
         mobs.remove(hero)
+        
         ms_times["anim"] = round(((time.time() - start_time)*1000)-ms_times["pkps"])
         
         ## Copy mob list with current modifications ##
@@ -1542,6 +1683,7 @@ def play(win):
                 pickup["graphics"].undraw()
                 pickup["graphics"].draw(win)
         mobs = spawn_controller(win,mobs,max_mobs,score)
+        
         ms_times["mobs"] = round(((time.time() - start_time)*1000)-ms_times["anim"])
         
         ## Check if player can shoot ##
@@ -1550,22 +1692,16 @@ def play(win):
             shoot=True
         else:
             shoot=False
+        
+        ms_times["ticks"] = round(((time.time() - start_time)*1000)-ms_times["mobs"])
             
         ## THEN, PROCESS PLAYER CONTROLS ##
         if pause:
             win.getKey()
         else:
             inp = win.checkKey()
-        #elif not mouse and not pause:
-        #    inp = win.checkKey()
-        #elif mouse and not pause:
-        #    inp = win.checkMouse()
-        #if settings["debug_mode"]["value"] and inp != "":
-        #    print(inp)
             
-            
-        timer = round(((time.time() - start_time)*1000)-ms_times["mobs"])
-        ms_times["input1"] = timer
+        ms_times["input1"] = round(((time.time() - start_time)*1000)-ms_times["ticks"])
             
         ## BASIC CONTROLS ##
         ## ESCAPE
@@ -1592,9 +1728,11 @@ def play(win):
             else:
                 ui = set_info_text(win,ui,"")
             
+        ms_times["input2"] = round(((time.time() - start_time)*1000)-ms_times["input1"])
+            
         
         ## ## MOVEMENT CONTROLS ##    
-        elif inp == settings["keys"]["move_up"]["value"]:
+        if inp == settings["keys"]["move_up"]["value"]:
             hero["direction"] = 180
             hero = move_hero(win,hero)
         elif inp == settings["keys"]["move_down"]["value"]:
@@ -1618,19 +1756,19 @@ def play(win):
             toggle_debug_ui(win,debug_ui)
         elif inp == "f":
             win.setBackground(settings["bg_flash"]["value"])
-        elif inp != "" and inp != None:
-            print(type(inp))
-            print(inp)
-            mouse = False
+        #elif inp != "" and inp != None:
+        #    pass
+            #print(type(inp))
+            #print(inp)
+            #mouse = False
             
-        timer = round(((time.time() - start_time)*1000)-ms_times["input1"])
-        ms_times["input2"] = timer
+        ms_times["input3"] = round(((time.time() - start_time)*1000)-ms_times["input2"])
             
         ## FINALLY, UPDATE THE SCREEN ACCORDING TO FRAME RATE ##
         update(settings["frame_rate"]["value"])
         
         ## AND THEN CHECK FPS CALCULATIONS ##
-        ms_times["update"] = round(((time.time() - start_time)*1000)-ms_times["input2"])
+        ms_times["update"] = round(((time.time() - start_time)*1000)-ms_times["input3"])
         string = str(ms_times)
         update_debug_ui(win,debug_ui,string)
         timer = time.time() - start_time
