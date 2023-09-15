@@ -6,10 +6,32 @@ shooter.sh is a bash wrapper that modifies keyboard repeat delay, so player
 can move smoothly in-game.  When game exits, wrapper sets keyboard repeat delay
 back to default value.
 
-It is highly recommended to lauch the game using shooter.sh, not shooter.py.
+It is no longer necessary to lauch the game using shooter.sh;
+funtionality has been incorporated into shooter.py.
 
 Shooter is a top-down arcade shooter game.  The player, enemies, pickups,
 and projectiles are represented by colored circles of various sizes.
+
+There are now three game modes: Horde, Waves, and Adventure.
+
+Horde is the classis endless game-type; as enemies are killed, new ones 
+spawn to take their place.  Over time, mobs become more numerous, and 
+increasingly stronger mobs will spawn.  This continues until the player
+is killed by the mobs.
+
+Waves will spawn a set number of mobs during gameplay.  Once player has slain
+all mobs, they return to the Waves Menu screen, where they can choose to 
+either spend their accumulated cash on weapons or upgrades, sell weapons, or
+continue to the next wave, which will have more mobs than the previous one.
+
+Adventure mode is similar to waves.  However, instead of a menu, the player
+is presented with a basic 'world map,' consisting of a series of connected
+nodes.  To reach a node, the player must unlock it.  The player start with
+two nodes unlocked: the first node is the 'town' node, which function 
+similarly to the Waves Vendor Menu, and allows the player to use their cash
+to purchase new weapons or ammo for their current weapons, or sell the
+weapons they already have.  Each unlocked node will have more mobs than
+the preceding nodes, creating a sense of progression.
 
 Pickups grant new weapons, increase ammo of existing weapons, or restore
 some health.  Pickup spawns are controlled by a central function, which waits
